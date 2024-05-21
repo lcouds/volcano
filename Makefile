@@ -98,8 +98,7 @@ vcctl: init
 image_bins: vc-scheduler vc-controller-manager vc-webhook-manager
 
 images:
-	#for name in controller-manager scheduler webhook-manager; do\
-	for name in scheduler; do\
+	for name in controller-manager scheduler webhook-manager; do\
 		docker buildx build --push -t "${IMAGE_PREFIX}/vc-$$name:$(VERSION)" . -f ./installer/dockerfile/$$name/Dockerfile --platform ${DOCKER_PLATFORMS}; \
 	done
 
