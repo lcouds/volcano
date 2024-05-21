@@ -74,7 +74,7 @@ func NewGPUDevice(id int, mem uint) *GPUDevice {
 }
 
 func NewGPUDevices(name string, node *v1.Node) *GPUDevices {
-	klog.V(3).Infoln("into devices")
+	klog.V(4).Infoln("into devices")
 	if node == nil {
 		return nil
 	}
@@ -91,7 +91,7 @@ func NewGPUDevices(name string, node *v1.Node) *GPUDevices {
 		return nil
 	}
 	for _, val := range nodedevices.Device {
-		klog.V(3).Infoln("name=", nodedevices.Name, "val=", *val)
+		klog.V(4).Infoln("name=", nodedevices.Name, "val=", *val)
 	}
 
 	// We have to handshake here in order to avoid time-inconsistency between scheduler and nodes
@@ -205,11 +205,18 @@ func (gs *GPUDevices) Allocate(kubeClient kubernetes.Interface, pod *v1.Pod) err
 			return err
 		}
 		if NodeLockEnable {
+			klog.V(3).Infoln("VGPU Allocate:NodeLockEnable", NodeLockEnable)
 			nodelock.UseClient(kubeClient)
 			err = nodelock.LockNode(gs.Name, DeviceName)
 			if err != nil {
+				nodelock.ReleaseNodeLock(gs.Name, DeviceName)
 				return errors.Errorf("node %s locked for lockname gpushare %s", gs.Name, err.Error())
 			}
+			klog.V(3).Infoln("Node lock set", "node", gs.Name)
+			defer func() {
+				nodelock.ReleaseNodeLock(gs.Name, DeviceName)
+				klog.V(3).Infoln("Node lock released", "node", gs.Name)
+			}()
 		}
 
 		annotations := make(map[string]string)

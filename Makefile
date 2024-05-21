@@ -15,7 +15,10 @@
 BIN_DIR=_output/bin
 RELEASE_DIR=_output/release
 REPO_PATH=volcano.sh/volcano
-IMAGE_PREFIX=volcanosh
+#IMAGE_PREFIX=volcanosh
+IMAGE_PREFIX=harbor.xz.com:8443/volcanosh
+VERSION ?= $(shell git describe --dirty --always --tags | sed 's/-/./g')
+
 CRD_OPTIONS ?= "crd:crdVersions=v1,generateEmbeddedObjectMeta=true"
 CRD_OPTIONS_EXCLUDE_DESCRIPTION=${CRD_OPTIONS}",maxDescLen=0"
 CC ?= "gcc"
@@ -57,7 +60,8 @@ GOARCH?=$(OSARCH)
 endif
 
 # Run `make images DOCKER_PLATFORMS="linux/amd64,linux/arm64" BUILDX_OUTPUT_TYPE=registry IMAGE_PREFIX=[yourregistry]` to push multi-platform
-DOCKER_PLATFORMS ?= "linux/${GOARCH}"
+#DOCKER_PLATFORMS ?= "linux/${GOARCH}"
+DOCKER_PLATFORMS ?= linux/amd64,linux/arm64	
 
 GOOS ?= linux
 
@@ -94,8 +98,9 @@ vcctl: init
 image_bins: vc-scheduler vc-controller-manager vc-webhook-manager
 
 images:
-	for name in controller-manager scheduler webhook-manager; do\
-		docker buildx build -t "${IMAGE_PREFIX}/vc-$$name:$(TAG)" . -f ./installer/dockerfile/$$name/Dockerfile --output=type=${BUILDX_OUTPUT_TYPE} --platform ${DOCKER_PLATFORMS}; \
+	#for name in controller-manager scheduler webhook-manager; do\
+	for name in scheduler; do\
+		docker buildx build --push -t "${IMAGE_PREFIX}/vc-$$name:$(VERSION)" . -f ./installer/dockerfile/$$name/Dockerfile --platform ${DOCKER_PLATFORMS}; \
 	done
 
 generate-code:
